@@ -43,9 +43,9 @@ def get_headers(token):
     }
 
 def login(query, proxy=None):
-    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?invitationCode=KU5gXBbC&initData={query}"
+    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?initData={query}"
     headers = get_headers("")
-    body = {"invitationCode": "KU5gXBbC", "initData": query}
+    body = {"initData": query}
 
     try:
         response = requests.post(url, headers=headers, json=body, proxies=proxy, allow_redirects=True)
@@ -173,8 +173,8 @@ def main():
     tokens = load_tokens('data.txt')
     proxies = load_proxies('proxy.txt') if os.path.exists('proxy.txt') else None
     total_accounts = len(tokens)
-    use_proxy = input(f"{Fore.CYAN}Do you want to use a proxy? (y/n): ").strip().lower()
-    run_task = input(f"{Fore.CYAN}Do you want to complete tasks? (y/n): ").strip().lower()
+    use_proxy = 'y'
+    run_task = 'y'
     
     clear_terminal()
     art()
