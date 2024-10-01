@@ -5,6 +5,15 @@ import hashlib
 import requests
 from colorama import Fore, Style, init
 
+import ssl 
+
+import aiohttp
+import aiocfscrape
+import asyncio
+from aiohttp_socks import ProxyConnector
+import logging
+import urllib.parse
+
 def clear_terminal():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -22,6 +31,7 @@ def countdown_timer(seconds):
 
 def load_tokens(filename):
     with open(filename, 'r') as file:
+        # Strip and URL-encode each line
         return [line.strip() for line in file if line.strip()]
 
 def load_proxies(filename):
@@ -42,15 +52,24 @@ def get_headers(token):
         "sec-fetch-site": "same-site"
     }
 
-def login(query, proxy=None):
-    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?initData={query}"
+async def make_request(http_client, method, endpoint=None, url=None, **kwargs):
+    response = await http_client.request(method, url or f"https://api.catshouse.club{endpoint or ''}", **kwargs)
+    response.raise_for_status()
+    return await response.json()
+
+async def login(http_client, query, proxy=None):
+    encoded_query = urllib.parse.quote(query)
+    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?inviteCode=&initData={encoded_query}"
     headers = get_headers("")
-    body = {"initData": query}
+    body = {"initData": query, "inviteCode": ""}
+    print(f"{random_color()}{Style.BRIGHT}Logging in with proxy: {url}  {body}")
 
     try:
-        response = requests.post(url, headers=headers, json=body, proxies=proxy, allow_redirects=True)
-        response.raise_for_status()
-        data = response.json()
+        data = await make_request(http_client, 'POST', url=url, json=body)
+        print(data)
+        # response = requests.post(url, headers=headers, json=body, proxies=proxy, allow_redirects=True)
+        # response.raise_for_status()
+        # data = response.json()
         token = data.get("data").get("token")
         return token
 
@@ -166,7 +185,24 @@ def random_color():
     colors = [Fore.GREEN, Fore.YELLOW, Fore.CYAN, Fore.MAGENTA]
     return random.choice(colors)
 
-def main():
+def check_proxy(proxy: dict):
+    """Check if the SOCKS proxy is working by verifying the IP address."""
+    test_url = 'https://api.ipify.org?format=json'
+    try:
+        # Send a request to the external IP-check service using the proxy
+        response = requests.get(test_url, proxies=proxy, timeout=5)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            ip_info = response.json()
+            print(f"Proxy is working. IP returned: {ip_info.get('ip')}")
+        else:
+            print(f"Failed to connect through proxy. Status code: {response.status_code}")
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Error occurred while checking proxy: {e}")
+
+async def main():
     clear_terminal()
     art()
     
@@ -184,20 +220,47 @@ def main():
         
         for i, query in enumerate(tokens, start=1):
             print(f"{Fore.CYAN}{Style.BRIGHT}------Account No.{i}------{Style.RESET_ALL}")
-            proxy = None
+            proxy = proxies[i % len(proxies)]
             
-            if use_proxy == 'y' and proxies:
-                proxy = {
-                    "http": f"http://{proxies[i % len(proxies)]}",
-                    "https": f"http://{proxies[i % len(proxies)]}"
-                }
-                proxy_parts = proxy['http'].split('@')[-1].split(':')
-                formatted_proxy = f"{proxy_parts[0][:4]}.....{proxy_parts[1]}"
-                print(f"{Fore.YELLOW}{Style.BRIGHT}Using Proxy: {formatted_proxy}{Style.RESET_ALL}")
+            CIPHERS = [
+                "ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256",
+                "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-RSA-AES256-GCM-SHA384",
+                "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-CHACHA20-POLY1305",
+                "ECDHE-RSA-AES128-SHA", "ECDHE-RSA-AES256-SHA",
+                "AES128-GCM-SHA256", "AES256-GCM-SHA384", "AES128-SHA", "AES256-SHA", "DES-CBC3-SHA",
+                "TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
+                "TLS_AES_128_CCM_SHA256", "TLS_AES_256_CCM_8_SHA256"
+            ]
+            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            ssl_context.set_ciphers(':'.join(CIPHERS))
+            ssl_context.set_ecdh_curve("prime256v1")
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
+            ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+            print("Proxy is " + proxy)
+
+
+            proxy_conn = ProxyConnector().from_url(url=proxy, rdns=True, ssl=ssl_context)
+
+
+            async with aiocfscrape.CloudflareScraper(headers=get_headers(""), connector=proxy_conn) as http_client:
+                if proxy:
+                    print("checking")
+                    try:
+                        response = await http_client.get(url='https://api.ipify.org?format=json', timeout=aiohttp.ClientTimeout(5))
+                        ip = (await response.json()).get('ip')
+                        print(f"Proxy IP: {ip}")
+                    except Exception as error:
+                        print(f"Proxy: {proxy} | Error: {error}")
+
+                token = await login(http_client, query, proxy)
+                print(token)
+
+
+            return None
  
             try:
                 
-                token = login(query, proxy)
+                token = await login(query, proxy)
                 if token:
 
                     collect_seq_no = data(token, proxy)
@@ -224,4 +287,4 @@ def main():
 
 if __name__ == "__main__":
     init()
-    main()
+    asyncio.run(main())
