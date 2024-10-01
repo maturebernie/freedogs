@@ -77,19 +77,21 @@ async def login(http_client, query, proxy=None):
         print(f"{random_color()}{Style.BRIGHT}Request failed: {e}{Style.RESET_ALL}")
         return None
 
-def data(token, proxy=None):
+async def data(http_client, token, proxy=None):
     url_1 = "https://api.freedogs.bot/miniapps/api/mine/getMineInfo?"
     url_2 = "https://api.freedogs.bot/miniapps/api/user_game_level/GetGameInfo?"
-    headers = get_headers(token)
-    
+    http_client.headers["authorization"] = token
+
     try:
-        response_1 = requests.get(url_1, headers=headers, proxies=proxy, allow_redirects=True)
-        response_2 = requests.get(url_2, headers=headers, proxies=proxy, allow_redirects=True)
-        response_1.raise_for_status()
-        response_2.raise_for_status()
+        # response_1 = requests.get(url_1, headers=headers, proxies=proxy, allow_redirects=True)
+        # response_2 = requests.get(url_2, headers=headers, proxies=proxy, allow_redirects=True)
+        data_1 = await make_request(http_client, 'GET', url=url_1)
+        data_2 = await make_request(http_client, 'GET', url=url_2)
+        # response_1.raise_for_status()
+        # response_2.raise_for_status()
         
-        data_1 = response_1.json()
-        data_2 = response_2.json()
+        # data_1 = response_1.json()
+        # data_2 = response_2.json()
         
         balance = data_1.get("data").get("getCoin")
         collect_seq_no = data_2.get("data").get("collectSeqNo")
@@ -102,15 +104,16 @@ def data(token, proxy=None):
         print(f"{random_color()}{Style.BRIGHT}Request failed: {e}{Style.RESET_ALL}")
         return None
 
-def friends(token, proxy=None):
+async def friends(http_client, token, proxy=None):
     url = f"https://api.freedogs.bot/miniapps/api/user_game/friends?page=1&pageSize=50"
-    headers = get_headers(token)
+    http_client.headers["authorization"] = token
     body = {"page": 1, "pageSize": 50}
 
     try:
-        response = requests.post(url, headers=headers, json=body, proxies=proxy, allow_redirects=True)
-        response.raise_for_status()
-        data = response.json()
+        data = await make_request(http_client, 'POST', url=url, json=body)
+        # response = requests.post(url, headers=headers, json=body, proxies=proxy, allow_redirects=True)
+        # response.raise_for_status()
+        # data = response.json()
         friends = data.get("data").get("count")
         print(f"{random_color()}{Style.BRIGHT}Total Friends: {friends}{Style.RESET_ALL}")
 
@@ -123,19 +126,19 @@ def generate_hash(collect_amount, collect_seq_no):
     combined = str(collect_amount) + str(collect_seq_no) + static_string
     return hashlib.md5(combined.encode()).hexdigest()
 
-def collect_coins(token, collect_seq_no, total_collect, proxy=None):
+async def collect_coins(http_client, token, collect_seq_no, total_collect, proxy=None):
     collect_amount = random.randint(60, 70)
     hash_code = generate_hash(collect_amount, collect_seq_no)
     
     url = f"https://api.freedogs.bot/miniapps/api/user_game/collectCoin?collectAmount={collect_amount}&hashCode={hash_code}&collectSeqNo={collect_seq_no}"
     
-    headers = get_headers(token)
+    http_client.headers["authorization"] = token
 
     try:
-        response = requests.post(url, headers=headers, proxies=proxy, allow_redirects=True)
-        response.raise_for_status()
+        # response = requests.post(url, headers=headers, proxies=proxy, allow_redirects=True)
+        # response.raise_for_status()
         
-        response_data = response.json()
+        response_data = await make_request(http_client, 'POST', url=url)
         total_collect += collect_amount
         print(f"{random_color()}{Style.BRIGHT}Tapped: {collect_amount} | Total Tapped: {total_collect}/500{Style.RESET_ALL}")
         
@@ -148,33 +151,41 @@ def collect_coins(token, collect_seq_no, total_collect, proxy=None):
     
     return collect_seq_no, total_collect
 
-def tasks(token, proxy=None):
+async def tasks(http_client, token, proxy=None):
     url_task_list = "https://api.freedogs.bot/miniapps/api/task/lists?"
     task_complete_url = "https://api.freedogs.bot/miniapps/api/task/finish_task?id={task_id}"
-    headers = get_headers(token)
+    http_client.headers["authorization"] = token
     body = {"page": 1, "pageSize": 50}
 
     try:
-        response = requests.get(url_task_list, headers=headers, json=body, proxies=proxy, allow_redirects=True)
-        response.raise_for_status()
+        # response = requests.get(url_task_list, headers=headers, json=body, proxies=proxy, allow_redirects=True)
+        # response.raise_for_status()
         
-        data = response.json()
+
+        data = await make_request(http_client, 'GET', url=url_task_list, json=body)
+        # data = response.json()
         tasks = data.get("data", {}).get("lists", [])
+        print(tasks)
         
         for task in tasks:
             task_id = task.get("id")
             name = task.get("name")
             is_finished = task.get("isFinish")
+            print("finishing task...")
 
             if not is_finished:
                 complete_url = task_complete_url.format(task_id=task_id)
                 complete_body = {"id": task_id}
-                complete_response = requests.post(complete_url, headers=headers, json=complete_body, proxies=proxy)
-                
-                if complete_response.status_code == 200:
-                    print(f"{random_color()}{Style.BRIGHT}Task {name} completed successfully!{Style.RESET_ALL}")
-                else:
-                    print(f"{random_color()}{Style.BRIGHT}Failed to complete task '{name}'. Status code: {complete_response.status_code}{Style.RESET_ALL}")
+                time.sleep(10)
+                # complete_response = requests.post(complete_url, headers=headers, json=complete_body, proxies=proxy)
+                try:
+                    complete_response = await make_request(http_client, 'POST', url=complete_url, json=complete_body)
+                except Exception as e:
+                    print("task failed") 
+                # if complete_response.status_code == 200:
+                #     print(f"{random_color()}{Style.BRIGHT}Task {name} completed successfully!{Style.RESET_ALL}")
+                # else:
+                #     print(f"{random_color()}{Style.BRIGHT}Failed to complete task '{name}'. Status code: {complete_response.status_code}{Style.RESET_ALL}")
             else:
                 print(f"{random_color()}{Style.BRIGHT}Task '{name}' is already completed.{Style.RESET_ALL}")
 
@@ -252,36 +263,38 @@ async def main():
                     except Exception as error:
                         print(f"Proxy: {proxy} | Error: {error}")
 
-                token = await login(http_client, query, proxy)
-                print(token)
-
-
-            return None
+                # token = await login(http_client, query, proxy)
+                # print(token)
+                # return None
  
-            try:
-                
-                token = await login(query, proxy)
-                if token:
-
-                    collect_seq_no = data(token, proxy)
-                    friends(token, proxy)
-                    if run_task == 'y':
-                        tasks(token, proxy)
+                try:
                     
-                    total_collect = 0
-                    if collect_seq_no:
-                        while total_collect < 500:
-                            collect_seq_no, total_collect = collect_coins(token, collect_seq_no, total_collect, proxy)
-                            countdown_timer(60)
+                    token = await login(http_client, query, proxy)
+                    print(token)
+                    if token:
+                        print("login successful")
+
+                        collect_seq_no = await data(http_client, token, proxy)
+                        print(collect_seq_no)
+                        await friends(http_client, token, proxy)
                         
-            except Exception as e:
-                print(f"{random_color()}{Style.BRIGHT}Error processing account {i}: {e}{Style.RESET_ALL} - Waiting for next Account")
-                countdown_timer(60)
-                continue
+                        # if run_task == 'y':
+                        await tasks(http_client, token, proxy)
+                        # return None
+                        total_collect = 0
+                        if collect_seq_no:
+                            while total_collect < 500:
+                                collect_seq_no, total_collect = await collect_coins(http_client, token, collect_seq_no, total_collect, proxy)
+                                countdown_timer(60)
+                            
+                except Exception as e:
+                    print(f"{random_color()}{Style.BRIGHT}Error processing account {i}: {e}{Style.RESET_ALL} - Waiting for next Account")
+                    countdown_timer(random.randint(60, 70))
+                    continue
             
             
         
-        countdown_timer(5 * 60* 60)
+        countdown_timer(random.randint(5 * 60* 60, 6 * 60* 60))
         clear_terminal()
         art()
 

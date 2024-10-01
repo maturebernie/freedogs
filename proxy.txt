@@ -1,1 +1,1 @@
-socks5://lhpxktqv:okbnbtjht75y@109.196.160.25:5771
+socks5://lhpxktqv:okbnbtjht75y@104.239.86.180:6090
