@@ -10,7 +10,7 @@ import ssl
 import aiohttp
 import aiocfscrape
 import asyncio
-from aiohttp_socks import ProxyConnector
+from aiohttp_proxy import ProxyConnector
 import logging
 import urllib.parse
 
