@@ -59,8 +59,10 @@ async def make_request(http_client, method, endpoint=None, url=None, **kwargs):
 
 async def login(http_client, query, proxy=None):
     encoded_query = urllib.parse.quote(query)
-    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?inviteCode=&initData={encoded_query}"
+    print(encoded_query)
+    url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?inviteCode=&initData={query}"
     headers = get_headers("")
+    print(headers)
     body = {"initData": query, "inviteCode": ""}
     print(f"{random_color()}{Style.BRIGHT}Logging in with proxy: {url}  {body}")
 
@@ -262,6 +264,8 @@ async def main():
                         print(f"Proxy IP: {ip}")
                     except Exception as error:
                         print(f"Proxy: {proxy} | Error: {error}")
+                        continue
+                
 
                 # token = await login(http_client, query, proxy)
                 # print(token)
