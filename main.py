@@ -16,6 +16,7 @@ import urllib.parse
 
 def clear_terminal():
     # os.system('cls' if os.name == 'nt' else 'clear')
+    print("----------------------")
 
 def art():
     print("\033[0m\n\033[1;96m ----------[ t.me/scriptsharing ]----------")
