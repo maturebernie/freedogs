@@ -58,8 +58,8 @@ async def make_request(http_client, method, endpoint=None, url=None, **kwargs):
     return await response.json()
 
 async def login(http_client, query, proxy=None):
-    encoded_query = urllib.parse.quote(query)
-    print(encoded_query)
+    # encoded_query = urllib.parse.quote(query)
+    # print(encoded_query)
     url = f"https://api.freedogs.bot/miniapps/api/user/telegram_auth?inviteCode=&initData={query}"
     headers = get_headers("")
     print(headers)
@@ -170,6 +170,15 @@ async def tasks(http_client, token, proxy=None):
         print(tasks)
         
         for task in tasks:
+            # Generate a random probability between 0 and 100
+            probability = random.uniform(0, 100)
+
+            # Check if the probability is less than or equal to 80%
+            if probability <= 20:
+                continue
+
+            sleep_time = random.randint(100, 4000)
+            time.sleep(sleep_time)
             task_id = task.get("id")
             name = task.get("name")
             is_finished = task.get("isFinish")
@@ -216,7 +225,7 @@ def check_proxy(proxy: dict):
         print(f"Error occurred while checking proxy: {e}")
 
 async def main():
-    clear_terminal()
+    # clear_terminal()
     art()
     
     tokens = load_tokens('data.txt')
@@ -232,6 +241,12 @@ async def main():
         print(f"{Fore.MAGENTA}{Style.BRIGHT}Total Accounts: {total_accounts}{Style.RESET_ALL}\n")
         
         for i, query in enumerate(tokens, start=1):
+            sleep_time = random.randint(100, 400)
+            countdown_timer(sleep_time)
+            probability = random.uniform(0, 100)
+            if probability <= 30:
+                continue
+
             print(f"{Fore.CYAN}{Style.BRIGHT}------Account No.{i}------{Style.RESET_ALL}")
             proxy = proxies[i % len(proxies)]
             
@@ -289,11 +304,13 @@ async def main():
                         if collect_seq_no:
                             while total_collect < 500:
                                 collect_seq_no, total_collect = await collect_coins(http_client, token, collect_seq_no, total_collect, proxy)
-                                countdown_timer(60)
+                                sleep_time = random.randint(100, 400)
+                                countdown_timer(sleep_time)
                             
                 except Exception as e:
                     print(f"{random_color()}{Style.BRIGHT}Error processing account {i}: {e}{Style.RESET_ALL} - Waiting for next Account")
-                    countdown_timer(random.randint(60, 70))
+                    sleep_time = random.randint(100, 400)
+                    countdown_timer(sleep_time)
                     continue
             
             
