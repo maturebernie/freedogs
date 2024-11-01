@@ -171,14 +171,17 @@ async def tasks(http_client, token, proxy=None):
         print(tasks)
         
         for task in tasks:
+            print("starting task...")
             # Generate a random probability between 0 and 100
             probability = random.uniform(0, 100)
 
             # Check if the probability is less than or equal to 80%
             if probability <= 20:
+                print("skipping task...")
                 continue
 
-            sleep_time = random.randint(100, 4000)
+            sleep_time = random.randint(100, 400)
+            print("sleeping task...")
             time.sleep(sleep_time)
             task_id = task.get("id")
             name = task.get("name")
@@ -243,7 +246,7 @@ async def main():
         
         for i, query in enumerate(tokens, start=1):
             sleep_time = random.randint(100, 400)
-            countdown_timer(sleep_time)
+            # countdown_timer(sleep_time)
             probability = random.uniform(0, 100)
             if probability <= 30:
                 continue
