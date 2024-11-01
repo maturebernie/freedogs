@@ -176,7 +176,7 @@ async def tasks(http_client, token, proxy=None):
             probability = random.uniform(0, 100)
 
             # Check if the probability is less than or equal to 80%
-            if probability <= 20:
+            if probability <= 95:
                 print("skipping task...")
                 continue
 
@@ -195,6 +195,7 @@ async def tasks(http_client, token, proxy=None):
                 # complete_response = requests.post(complete_url, headers=headers, json=complete_body, proxies=proxy)
                 try:
                     complete_response = await make_request(http_client, 'POST', url=complete_url, json=complete_body)
+                    print(complete_response)
                 except Exception as e:
                     print("task failed") 
                 # if complete_response.status_code == 200:
